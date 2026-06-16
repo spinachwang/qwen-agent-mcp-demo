@@ -86,3 +86,11 @@ def test_corrupt_json_falls_back_to_empty(tmp_path, monkeypatch):
     # And saving should overwrite the corrupt file
     save_one("recovered", "ok")
     assert read_one("recovered") == "ok"
+
+
+def test_non_dict_json_falls_back_to_empty(tmp_path, monkeypatch):
+    """If the JSON file contains a non-dict (e.g. a list), load returns {}."""
+    target = tmp_path / "notes.json"
+    target.write_text("[1, 2, 3]", encoding="utf-8")
+    monkeypatch.setattr("src.notes_store.NOTES_FILE", target)
+    assert list_all() == "No notes saved yet."
