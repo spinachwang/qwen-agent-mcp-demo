@@ -1,4 +1,7 @@
 # Runtime dependencies
 qwen-agent[gui,rag,code_interpreter,mcp]>=0.0.26
-fastmcp>=2.0
+# mcp[cli] gives us both the stdio server (FastMCP) and the client (stdio_client)
+# used by the integration tests. The qwen-agent[...mcp] extra pins a compatible
+# version; we don't pin a separate fastmcp to avoid version conflict.
+mcp>=1.9
 python-dotenv>=1.0

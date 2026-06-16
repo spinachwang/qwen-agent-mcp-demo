@@ -17,7 +17,7 @@ import os
 import sys
 from pathlib import Path
 
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 
 # Make src/ importable when this file is run as `python servers/notes_server.py`
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
