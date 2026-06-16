@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 from src.config import (  # RED: these don't exist yet
     build_llm_cfg,
+    load_env,
     load_mcp_config,
     validate_mcp_config,
 )
@@ -118,3 +120,26 @@ def test_validate_mcp_config_rejects_missing_top_key():
     with pytest.raises(ValueError) as excinfo:
         validate_mcp_config({"servers": {}})
     assert "mcpServers" in str(excinfo.value)
+
+
+# --- load_env --------------------------------------------------------------
+
+
+def test_load_env_reads_dotenv_into_environ(tmp_path, monkeypatch):
+    """load_env reads the .env file and sets vars into os.environ."""
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "TEST_LOAD_ENV_VAR=hello-from-dotenv\n",
+        encoding="utf-8",
+    )
+    # Ensure the var is not already set
+    monkeypatch.delenv("TEST_LOAD_ENV_VAR", raising=False)
+    load_env(env_file)
+    assert os.environ["TEST_LOAD_ENV_VAR"] == "hello-from-dotenv"
+
+
+def test_load_env_missing_file_is_noop(tmp_path, monkeypatch):
+    """load_env with a missing file does not raise and does not set vars."""
+    monkeypatch.delenv("TEST_LOAD_ENV_VAR", raising=False)
+    load_env(tmp_path / "nonexistent.env")  # must not raise
+    assert "TEST_LOAD_ENV_VAR" not in os.environ
