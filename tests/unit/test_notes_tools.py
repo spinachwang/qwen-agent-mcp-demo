@@ -4,6 +4,8 @@ These tests use tmp_path + monkeypatch to isolate filesystem state.
 """
 from __future__ import annotations
 
+import json
+
 import pytest
 
 # These imports are intentionally of functions that don't exist yet.
@@ -22,6 +24,12 @@ def notes_file(tmp_path, monkeypatch):
     target = tmp_path / "notes.json"
     monkeypatch.setattr("src.notes_store.NOTES_FILE", target)
     return target
+
+
+def _point_notes_at(monkeypatch, path):
+    """Helper for tests that need to pre-populate the file before patching."""
+    monkeypatch.setattr("src.notes_store.NOTES_FILE", path)
+    return path
 
 
 def test_save_then_read_returns_content(notes_file):
@@ -43,13 +51,13 @@ def test_list_empty_returns_default_message(notes_file):
 
 
 def test_list_nonempty_returns_all_titles(notes_file):
-    """Listing notes returns each title when notes exist."""
+    """Listing notes returns each title on its own line in '- <t> (<n> chars)' format."""
     save_one("a", "x")
     save_one("b", "yy")
     out = list_all()
-    assert "a" in out
-    assert "b" in out
-    # Each title with its content length, one per line
+    # Exact per-line format pins the contract from FR-1
+    assert "- a (1 chars)" in out
+    assert "- b (2 chars)" in out
     lines = out.strip().splitlines()
     assert len(lines) == 2
 
@@ -68,19 +76,30 @@ def test_delete_missing_returns_not_found(notes_file):
 
 
 def test_save_creates_file_with_correct_format(notes_file):
-    """Saving creates the file with the expected JSON structure."""
+    """Saving creates the file with the expected JSON structure and 2-space indent."""
     save_one("k1", "v1")
     assert notes_file.exists()
-    import json
-    data = json.loads(notes_file.read_text(encoding="utf-8"))
+    raw = notes_file.read_text(encoding="utf-8")
+    # 2-space indent is required by FR-2
+    assert '\n  "k1": "v1"\n' in raw
+    data = json.loads(raw)
     assert data == {"k1": "v1"}
+
+
+def test_save_creates_parent_directories(tmp_path, monkeypatch):
+    """Saving into a non-existent subdirectory creates parents (mkdir branch)."""
+    nested = tmp_path / "new_subdir" / "notes.json"
+    _point_notes_at(monkeypatch, nested)
+    save_one("nested", "ok")
+    assert nested.exists()
+    assert read_one("nested") == "ok"
 
 
 def test_corrupt_json_falls_back_to_empty(tmp_path, monkeypatch):
     """If the JSON file is corrupt, load should fall back to an empty dict."""
     target = tmp_path / "notes.json"
     target.write_text("not valid json {{{", encoding="utf-8")
-    monkeypatch.setattr("src.notes_store.NOTES_FILE", target)
+    _point_notes_at(monkeypatch, target)
     # Should not raise; should behave as if empty
     assert list_all() == "No notes saved yet."
     # And saving should overwrite the corrupt file
@@ -92,5 +111,5 @@ def test_non_dict_json_falls_back_to_empty(tmp_path, monkeypatch):
     """If the JSON file contains a non-dict (e.g. a list), load returns {}."""
     target = tmp_path / "notes.json"
     target.write_text("[1, 2, 3]", encoding="utf-8")
-    monkeypatch.setattr("src.notes_store.NOTES_FILE", target)
+    _point_notes_at(monkeypatch, target)
     assert list_all() == "No notes saved yet."

@@ -8,7 +8,13 @@ Design:
 - NOTES_FILE is a module-level Path; tests monkeypatch it for isolation.
 - All public functions return user-facing strings matching FR-1 in
   docs/specs/02-specification.md.
-- JSON corruption falls back to an empty dict (does not raise).
+- JSON corruption (invalid JSON, or JSON whose root is not an object) falls
+  back to an empty dict — does not raise.
+- Non-string keys/values from a malformed file are coerced to str on load.
+- Permission errors (PermissionError, IsADirectoryError, etc.) are NOT
+  caught — they propagate. FR-2 covers corruption, not I/O access denial.
+- Writes are not atomic. Acceptable for the single-user demo (NFR excludes
+  multi-user concurrency per docs/specs/02-specification.md §5).
 """
 from __future__ import annotations
 
@@ -22,7 +28,11 @@ NOTES_FILE: Path = _DEFAULT_FILE
 
 
 def _load() -> dict[str, str]:
-    """Load all notes from disk. Returns {} if file is missing or corrupt."""
+    """Load all notes from disk.
+
+    Returns {} if the file is missing, contains invalid JSON, or whose root
+    is not a JSON object. Non-string keys/values are coerced to str.
+    """
     if not NOTES_FILE.exists():
         return {}
     try:
