@@ -1,0 +1,4 @@
+# Runtime dependencies
+qwen-agent[gui,rag,code_interpreter,mcp]>=0.0.26
+fastmcp>=2.0
+python-dotenv>=1.0
