@@ -61,12 +61,14 @@ def build_bot(
     return bot
 
 
-def main() -> None:  # pragma: no cover  (covered in T5)
+def main() -> None:
     """Launch the qwen-agent built-in Gradio WebUI."""
     from qwen_agent.gui import WebUI
 
     bot = build_bot()
-    WebUI(bot).launch()
+    # qwen-agent's WebUI uses .run() to start the Gradio server.
+    # Default server_port=None lets Gradio pick (typically 7860).
+    WebUI(bot).run()
 
 
 if __name__ == "__main__":  # pragma: no cover
