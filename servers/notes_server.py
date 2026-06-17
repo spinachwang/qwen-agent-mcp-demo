@@ -11,7 +11,12 @@ Environment variables:
 Run standalone (for debugging):
     NOTES_FILE=/tmp/debug.json python servers/notes_server.py
 """
-from __future__ import annotations
+# NOTE: deliberately NO 'from __future__ import annotations'.
+# mcp 1.9-1.12's bundled FastMCP introspects type hints via
+# inspect.signature and calls issubclass(param.annotation, Context);
+# with PEP 563 annotations (strings), that issubclass() call raises
+# TypeError. Real class objects are required, so annotations must
+# be evaluated normally at function-definition time.
 
 import os
 import sys

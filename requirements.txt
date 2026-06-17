@@ -1,7 +1,17 @@
 # Runtime dependencies
 qwen-agent[gui,rag,code_interpreter,mcp]>=0.0.26
-# mcp[cli] gives us both the stdio server (FastMCP) and the client (stdio_client)
+# mcp provides both the stdio server (FastMCP) and the client (stdio_client)
 # used by the integration tests. The qwen-agent[...mcp] extra pins a compatible
 # version; we don't pin a separate fastmcp to avoid version conflict.
-mcp>=1.9
+#
+# Pinning mcp<1.13: qwen-agent[gui] pins pydantic==2.9.2, and mcp>=1.13
+# requires pydantic>=2.11.0 — pip would emit a resolver conflict between
+# the two (and a transitive fastmcp-slim 3.4.2 would surface a stricter
+# pydantic[email]>=2.11.7 requirement). mcp 1.9–1.12 work with pydantic
+# 2.8–2.10 without conflict.
+mcp>=1.9,<1.13
+# qwen_agent.utils.utils imports soundfile unconditionally at module load
+# (used for audio/multimodal tooling). Even though we don't use audio in
+# this demo, importing qwen_agent fails without it.
+soundfile>=0.12
 python-dotenv>=1.0
