@@ -153,6 +153,9 @@ Per the project owner's global rules (a destructive-history incident in 2026-05-
 | `ValueError: Missing required field "mcpServers"` | `mcp.json` top-level key wrong case | must be exactly `mcpServers` |
 | Tools don't appear in UI sidebar | MCP subprocess failed to spawn | verify the Python interpreter is reachable: in `mcp.json`, set `command` to the absolute path of the conda env's Python (e.g. `C:\Users\<user>\miniconda3\envs\qwenagent-mcp\python.exe`) |
 | `ImportError: No module named 'fastmcp'` | wrong import path | this project uses `from mcp.server.fastmcp import FastMCP`; the `fastmcp` package is **not** a dependency (avoids a version conflict with `qwen-agent`) |
+| `TypeError: issubclass() arg 1 must be a class` at import | `mcp<1.13` shipped with `FastMCP` is incompatible with `from __future__ import annotations` | we deliberately omit the future import in `servers/notes_server.py` so type hints are real class objects; if you add new tools, follow the same pattern |
+| `ImportError: No module named 'soundfile'` | `qwen-agent` imports `soundfile` unconditionally at module load | `pip install soundfile` (already in `requirements.txt`; only missing in hand-crafted envs) |
+| Install warning `fastmcp-slim X requires pydantic[email]>=2.11.7, but you have pydantic 2.9.2` | `qwen-agent[gui]` pins `pydantic==2.9.2`, conflicting with newer mcp/fastmcp-slim | already mitigated by `mcp>=1.9,<1.13` in `requirements.txt`; do not upgrade mcp beyond 1.12 without also overriding pydantic |
 | Port 7860 in use | previous launch left process running | kill stray `python run_web.py`; or pass `server_port=` to `WebUI.run()` |
 | Python < 3.10 syntax error | env created with older Python | `conda create -n qwenagent-mcp python=3.10 -y` (recreate) |
 | Agent responds but never calls a tool | model is too weak for function calling | MiniMax-M3 is documented as function-calling capable; if it fails, check the platform's docs for a stronger variant |
